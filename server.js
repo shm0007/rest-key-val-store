@@ -6,7 +6,7 @@ app.use(bodyparser.raw({extended: true}));
 
 const PORT = 3000;
 const HOST = '0.0.0.0'
-const TTL = 30000;
+const TTL = 300000;
 let db;
 const { MongoClient } = require('mongodb');
 const { ObjectID } = require('mongodb');
@@ -35,6 +35,30 @@ app.post('/values', (req,res) =>{
 		if(err) return console.log(err);
 		console.log("saved to database");
 		res.status(201).send(keys); 
-	})
-	
+	})	
 })
+
+app.get('/values', (req,res) =>{
+	clear();
+	db.collection(collectionName).find().project({_id:0}).toArray((err, result)=>{
+		 res.send(result);
+		 resetAllTTL();
+	})
+})
+
+var resetAllTTL = function(){
+	db.collection(collectionName)
+	.updateMany({}, {
+	    $set: {
+	    	createdAt: Date.now()
+	    }
+	});
+}
+
+var clear = function() {
+	var min = Date.now() - TTL;
+	console.log(min);
+	db.collection(collectionName).remove({
+		createdAt: {$lt: min}
+	});
+};
