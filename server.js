@@ -6,7 +6,9 @@ app.use(bodyparser.raw({extended: true}));
 
 const PORT = 3000;
 const HOST = '0.0.0.0'
+
 const TTL = 300000;
+
 let db;
 const { MongoClient } = require('mongodb');
 const { ObjectID } = require('mongodb');
@@ -36,7 +38,7 @@ app.post('/values', (req,res) =>{
 	db.collection(collectionName).insertMany(keys, (err, result)=>{
 		if(err) return console.log(err);
 		console.log("saved to database");
-		res.status(201).send(keys); 
+		res.status(201).send(req.body); 
 	})	
 })
 
@@ -48,7 +50,6 @@ app.get('/values', (req,res) =>{
 			 var responseObject = {}
 			 for(var i=0;i<result.length;i++){
 			 	responseObject[result[i]['key']] = result[i]['value'];			 }
-			
 			 res.send(responseObject);
 			 resetAllTTL();
 		})
@@ -56,16 +57,14 @@ app.get('/values', (req,res) =>{
 	else{
 		var keysArray = keys.split(',');
 		db.collection(collectionName).find({ key: { $in: keysArray } }).toArray((err, result)=>{
-			 var responseObject = {}
-			 for(var i=0;i<result.length;i++){
-			 	responseObject[result[i]['key']] = result[i]['value'];
-			 }
-			
-			 res.send(responseObject);
-			 resetTTL(keysArray);
+			var responseObject = {}
+			for(var i=0;i<result.length;i++){
+				responseObject[result[i]['key']] = result[i]['value'];
+			}
+			res.send(responseObject);
+			resetTTL(keysArray);
 		})
 	}
-
 })
 
 app.patch('/values', (req,res) =>{
@@ -84,7 +83,6 @@ app.patch('/values', (req,res) =>{
 	    }
 	}
 	res.status(204).send("");
-	
 })
 
 app.all('*',(req,res) =>{
@@ -112,7 +110,6 @@ var resetTTL = function(keysArray){
 	    	createdAt: Date.now()
 	    }
 	});
-
 }
 
 var clear = function() {
