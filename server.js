@@ -46,23 +46,34 @@ app.get('/values', (req,res) =>{
 	clear();
 	const keys = req.query.keys;
 	if(keys == null){
-		db.collection(collectionName).find().toArray((err, result)=>{	
-			 var responseObject = {}
-			 for(var i=0;i<result.length;i++){
-			 	responseObject[result[i]['key']] = result[i]['value'];			 }
-			 res.send(responseObject);
-			 resetAllTTL();
+		db.collection(collectionName).find().toArray((err, result)=>{
+			if(result[0]==null){
+				res.status(404).send("404 Not Found!!");
+			}
+			else{
+				var responseObject = {}
+				for(var i=0;i<result.length;i++){
+					responseObject[result[i]['key']] = result[i]['value'];
+				}
+				res.send(responseObject);
+				resetAllTTL();	
+			}	
 		})
 	}
 	else{
 		var keysArray = keys.split(',');
 		db.collection(collectionName).find({ key: { $in: keysArray } }).toArray((err, result)=>{
-			var responseObject = {}
-			for(var i=0;i<result.length;i++){
-				responseObject[result[i]['key']] = result[i]['value'];
+			if(result[0]==null){
+				res.status(404).send("404 Not Found!!");
 			}
-			res.send(responseObject);
-			resetTTL(keysArray);
+			else{
+				var responseObject = {}
+				for(var i=0;i<result.length;i++){
+					responseObject[result[i]['key']] = result[i]['value'];
+				}
+				res.send(responseObject);
+				resetTTL(keysArray);
+			}
 		})
 	}
 })
