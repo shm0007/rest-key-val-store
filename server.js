@@ -6,7 +6,7 @@ app.use(bodyparser.raw({extended: true}));
 
 const PORT = 3000;
 const HOST = '0.0.0.0'
-const TTL = 300000;
+const TTL = 3000000;
 let db;
 const { MongoClient } = require('mongodb');
 const { ObjectID } = require('mongodb');
@@ -24,7 +24,8 @@ app.post('/values', (req,res) =>{
 	for (var key in req.body) {
 	    if (req.body.hasOwnProperty(key)) {
 	    	var obj = {};
-	    	obj[key] = req.body[key];
+	    	obj['key'] = key;
+			obj['value'] = req.body[key];
 	    	obj['createdAt'] = Date.now();
 	    	keys.push(obj);
 	       	console.log(key + " -> " + req.body[key]);
@@ -40,19 +41,50 @@ app.post('/values', (req,res) =>{
 
 app.get('/values', (req,res) =>{
 	clear();
-	db.collection(collectionName).find().project({_id:0}).toArray((err, result)=>{
-		 res.send(result);
-		 resetAllTTL();
-	})
+	const keys = req.query.keys;
+	if(keys == null){
+		db.collection(collectionName).find().toArray((err, result)=>{	
+			 var responseObject = {}
+			 for(var i=0;i<result.length;i++){
+			 	responseObject[result[i]['key']] = result[i]['value'];
+			 }
+			
+			 res.send(responseObject);
+			 resetAllTTL();
+		})
+	}
+	else{
+		var keysArray = keys.split(',');
+		db.collection(collectionName).find({ key: { $in: keysArray } }).toArray((err, result)=>{
+			 var responseObject = {}
+			 for(var i=0;i<result.length;i++){
+			 	responseObject[result[i]['key']] = result[i]['value'];
+			 }
+			
+			 res.send(responseObject);
+			 resetTTL(keysArray);
+		})
+	}
+
 })
 
 var resetAllTTL = function(){
 	db.collection(collectionName)
-	.updateMany({}, {
+	.updateMany({ }, {
 	    $set: {
 	    	createdAt: Date.now()
 	    }
 	});
+}
+
+var resetTTL = function(keysArray){
+	db.collection(collectionName)
+	.updateMany({ key: { $in: keysArray }}, {
+	    $set: {
+	    	createdAt: Date.now()
+	    }
+	});
+
 }
 
 var clear = function() {
