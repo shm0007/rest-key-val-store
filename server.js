@@ -3,9 +3,10 @@ const app = express();
 const bodyparser = require('body-parser');
 app.use(bodyparser.json());
 app.use(bodyparser.raw({extended: true}));
+
 const PORT = 3000;
 const HOST = '0.0.0.0'
-
+const TTL = 30000;
 let db;
 const { MongoClient } = require('mongodb');
 const { ObjectID } = require('mongodb');
@@ -18,18 +19,22 @@ MongoClient.connect( dburl ,(err, client)=>{
 	console.log("Server is running");
 })
 
-var requestTime = function (req, res, next) {
-  req.body.createdAt = Date.now();
-  console.log(Date.now());
-  next()
-}
-
-app.use(requestTime);
-
 app.post('/values', (req,res) =>{
-	db.collection(collectionName).save(req.body, (err, result)=>{
+	var keys =  [];
+	for (var key in req.body) {
+	    if (req.body.hasOwnProperty(key)) {
+	    	var obj = {};
+	    	obj[key] = req.body[key];
+	    	obj['createdAt'] = Date.now();
+	    	keys.push(obj);
+	       	console.log(key + " -> " + req.body[key]);
+	    }
+	}
+	
+	db.collection(collectionName).insertMany(keys, (err, result)=>{
 		if(err) return console.log(err);
 		console.log("saved to database");
-		res.status(201).send(req.body); 
+		res.status(201).send(keys); 
 	})
+	
 })
