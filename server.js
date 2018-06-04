@@ -83,8 +83,17 @@ app.patch('/values', (req,res) =>{
 		    });
 	    }
 	}
-	res.status(204).send("Updated");
+	res.status(204).send("");
 	
+})
+
+app.all('*',(req,res) =>{
+    res.status(404).send("ERROR 404 Not Found!!!");
+})
+
+app.use(function (err, req, res, next) {
+    console.error(err.stack)
+    res.status(500).send('Internal Server error!!!')
 })
 
 var resetAllTTL = function(){
